@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 
 const kGreen = Color(0xFF1F6F54);
 const kGreenDark = Color(0xFF12483A);

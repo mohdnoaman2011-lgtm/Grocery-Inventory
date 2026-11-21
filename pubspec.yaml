@@ -12,6 +12,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   shared_preferences: ^2.2.2
+  local_auth: ^2.3.0
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:

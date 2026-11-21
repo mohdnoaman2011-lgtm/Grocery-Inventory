@@ -5,6 +5,7 @@ import '../l10n/strings.dart';
 import '../models/product.dart';
 import '../utils.dart';
 import '../widgets/status_chip.dart';
+import '../widgets/ui.dart';
 import 'product_form.dart';
 
 class HomePage extends StatelessWidget {
@@ -12,56 +13,136 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => watch((c) {
+        final cs = Theme.of(c).colorScheme;
+        final br = Theme.of(c).brightness;
+        final empty = state.products.isEmpty;
         final critical = state.products.where((p) => p.status != Status.ok).toList()
           ..sort((a, b) => b.status.index.compareTo(a.status.index));
-        Widget stat(String k, String v, [Color? bg, Color? fg]) => Card(
-              color: bg, elevation: 0,
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Text(tr(k), style: TextStyle(fontSize: 13, color: fg)),
-                  Text(v, style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: fg)),
+
+        Widget mini(IconData icon, String k, num v, Color tint) => Expanded(
+              child: Surface(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(color: tint.withAlpha(38), shape: BoxShape.circle),
+                    child: Icon(icon, color: tint, size: 22),
+                  ),
+                  const SizedBox(height: 14),
+                  CountUp(v, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 2),
+                  Text(tr(k), style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
                 ]),
               ),
             );
+
+        String sub(Product p) => (p.status == Status.low || p.expiry == null)
+            ? '${tr('qty')}: ${p.qty} / ${p.minQty}'
+            : fmtDate(p.expiry!);
+
         return Scaffold(
           body: SafeArea(
-            child: ListView(padding: const EdgeInsets.all(16), children: [
+            child: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 24), children: [
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(tr('welcome'), style: const TextStyle(fontSize: 12)),
-                  Text(tr('app'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+                  Text(tr('welcome'), style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
+                  Text(tr('app'), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
                 ]),
-                FilledButton(
-                  style: FilledButton.styleFrom(backgroundColor: kGreen, minimumSize: const Size(0, 46)),
+                FilledButton.icon(
                   onPressed: () => openForm(c),
-                  child: Text(tr('newProduct')),
+                  icon: const Icon(Icons.add),
+                  label: Text(tr('newProduct')),
                 ),
               ]),
-              const SizedBox(height: 16),
-              GridView.count(
-                crossAxisCount: 2, childAspectRatio: 1.7, mainAxisSpacing: 10, crossAxisSpacing: 10,
-                shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  stat('totalItems', fmt(state.products.length)),
-                  stat('totalUnits', fmt(state.units)),
-                  stat('lowStock', fmt(state.count((s) => s == Status.low)), const Color(0xFFFFF1D6), const Color(0xFF7A4B00)),
-                  stat('expiryAlerts', fmt(state.count((s) => s == Status.expiring || s == Status.expired)), const Color(0xFFFDE4E1), const Color(0xFF8C1D18)),
-                  stat('stockValue', fmt(state.value)),
-                  stat('profit', fmt(state.profit), const Color(0xFFE1F2EA), const Color(0xFF145238)),
-                ],
-              ),
-              const SizedBox(height: 18),
-              Text(tr('attention'), style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              ...critical.take(3).map((p) => Card(
-                    elevation: 0,
-                    child: ListTile(
-                      title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text(p.expiry != null ? fmtDate(p.expiry!) : '${p.qty} / ${p.minQty}'),
-                      trailing: StatusChip(p.status),
+              const SizedBox(height: 20),
+              if (empty)
+                Surface(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+                  child: Column(children: [
+                    Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(color: cs.primaryContainer, shape: BoxShape.circle),
+                      child: Icon(Icons.inventory_2_outlined, size: 36, color: cs.onPrimaryContainer),
                     ),
-                  )),
+                    const SizedBox(height: 18),
+                    Text(tr('emptyHome'), textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 18),
+                    FilledButton.icon(onPressed: () => openForm(c), icon: const Icon(Icons.add), label: Text(tr('addFirst'))),
+                  ]),
+                )
+              else ...[
+                Surface(
+                  radius: 28,
+                  padding: const EdgeInsets.all(22),
+                  gradient: const LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [kGreen, kGreenDark]),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(tr('stockValue'), style: TextStyle(color: Colors.white.withAlpha(215), fontSize: 14)),
+                      const SizedBox(height: 6),
+                      CountUp(state.value, style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                        decoration: BoxDecoration(color: Colors.white.withAlpha(38), borderRadius: BorderRadius.circular(99)),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.trending_up, color: Colors.white, size: 18),
+                          const SizedBox(width: 6),
+                          Text('${tr('profit')}: ${fmt(state.profit)}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
+                        ]),
+                      ),
+                    ]),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(children: [
+                  mini(Icons.category_outlined, 'totalItems', state.products.length, cs.primary),
+                  const SizedBox(width: 12),
+                  mini(Icons.layers_outlined, 'totalUnits', state.units, cs.tertiary),
+                ]),
+                const SizedBox(height: 12),
+                Row(children: [
+                  mini(Icons.trending_down, 'lowStock', state.count((s) => s == Status.low), Status.low.fg(br)),
+                  const SizedBox(width: 12),
+                  mini(Icons.event_busy, 'expiryAlerts', state.count((s) => s == Status.expiring || s == Status.expired), Status.expired.fg(br)),
+                ]),
+                const SizedBox(height: 24),
+                Text(tr('attention'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 10),
+                if (critical.isEmpty)
+                  Surface(
+                    child: Row(children: [
+                      Icon(Icons.check_circle, color: Status.ok.fg(br)),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(tr('allGood'), style: const TextStyle(fontWeight: FontWeight.w600))),
+                    ]),
+                  )
+                else
+                  ...critical.take(4).map((p) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Surface(
+                          padding: const EdgeInsets.all(14),
+                          onTap: () => openForm(c, p),
+                          child: Row(children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(color: p.status.bg(br), borderRadius: BorderRadius.circular(14)),
+                              child: Icon(p.status.icon, color: p.status.fg(br)),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                                Text(sub(p), style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+                              ]),
+                            ),
+                            StatusChip(p.status),
+                          ]),
+                        ),
+                      )),
+              ],
             ]),
           ),
         );

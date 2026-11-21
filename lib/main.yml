@@ -1,0 +1,57 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # المشروع لا يحتوي مجلدات المنصات، فتُنشأ هنا إن لم تكن موجودة
+      - name: Create platform folders if missing
+        run: |
+          if [ ! -d android ]; then
+            flutter create . --platforms=android --project-name inventory_app --org com.example
+          fi
+
+      # صلاحية البصمة + دعم زر الرجوع التنبؤي (Android 14+) + نشاط يدعم نافذة البصمة
+      - name: Configure Android
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          if ! grep -q USE_BIOMETRIC "$MANIFEST"; then
+            sed -i '0,/<application/s//<uses-permission android:name="android.permission.USE_BIOMETRIC"\/>\n    <application android:enableOnBackInvokedCallback="true"/' "$MANIFEST"
+          fi
+          find android/app/src/main -name 'MainActivity.*' -exec sed -i 's/FlutterActivity/FlutterFragmentActivity/g' {} +
+          grep -n "USE_BIOMETRIC\|enableOnBackInvokedCallback" "$MANIFEST"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate app icons
+        run: dart run flutter_launcher_icons
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: inventory-app-apk
+          path: build/app/outputs/flutter-apk/app-release.apk

@@ -5,16 +5,33 @@ enum Status { ok, low, expiring, expired }
 
 extension StatusUi on Status {
   String get label => tr(name);
-  Color get bg => switch (this) {
-        Status.ok => const Color(0xFFE1F2EA),
-        Status.low => const Color(0xFFFFF1D6),
-        _ => const Color(0xFFFDE4E1),
+
+  IconData get icon => switch (this) {
+        Status.ok => Icons.check_circle_outline,
+        Status.low => Icons.trending_down,
+        Status.expiring => Icons.hourglass_bottom,
+        Status.expired => Icons.event_busy,
       };
-  Color get fg => switch (this) {
-        Status.ok => const Color(0xFF145238),
-        Status.low => const Color(0xFF7A4B00),
-        _ => const Color(0xFF8C1D18),
-      };
+
+  Color fg(Brightness b) => b == Brightness.light
+      ? switch (this) {
+          Status.ok => const Color(0xFF145238),
+          Status.low => const Color(0xFF7A4B00),
+          _ => const Color(0xFF8C1D18),
+        }
+      : switch (this) {
+          Status.ok => const Color(0xFF6FCF97),
+          Status.low => const Color(0xFFFFC857),
+          _ => const Color(0xFFFF8A80),
+        };
+
+  Color bg(Brightness b) => b == Brightness.light
+      ? switch (this) {
+          Status.ok => const Color(0xFFE1F2EA),
+          Status.low => const Color(0xFFFFF1D6),
+          _ => const Color(0xFFFDE4E1),
+        }
+      : fg(b).withAlpha(46);
 }
 
 class Product {

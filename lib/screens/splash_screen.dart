@@ -26,7 +26,8 @@ class _SplashScreenState extends State<SplashScreen> {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
       body: SafeArea(
-        child: Column(children: [
+        child: SizedBox.expand(
+          child: Column(children: [
           const Spacer(flex: 3),
           const BrandLogo(height: 220),
           const SizedBox(height: 18),
@@ -47,6 +48,7 @@ class _SplashScreenState extends State<SplashScreen> {
           Text('1.0.0', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
           const SizedBox(height: 16),
         ]),
+        ),
       ),
     );
   }

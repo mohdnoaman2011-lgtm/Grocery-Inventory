@@ -4,6 +4,8 @@ import '../l10n/strings.dart';
 import '../models/product.dart';
 import '../theme.dart';
 import '../utils.dart';
+import '../models/categories.dart';
+import '../widgets/category_picker.dart';
 import '../widgets/ui.dart';
 
 void openForm(BuildContext c, [Product? p]) =>
@@ -54,6 +56,38 @@ class _ProductFormState extends State<ProductForm> {
         ),
       );
 
+  Widget categoryField() => labeled(
+        'category',
+        FormField<String>(
+          validator: (_) => cat.text.trim().isEmpty ? tr('required') : null,
+          builder: (st) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () async {
+                final v = await pickCategory(context, cat.text);
+                if (v != null) {
+                  setState(() => cat.text = v);
+                  st.didChange(v);
+                }
+              },
+              child: InputDecorator(
+                decoration: deco(suffix: const Icon(Icons.keyboard_arrow_down)),
+                isEmpty: cat.text.isEmpty,
+                child: Text(
+                  cat.text.isEmpty ? tr('chooseCategory') : categoryLabel(cat.text),
+                  style: TextStyle(color: cat.text.isEmpty ? Theme.of(context).hintColor : null),
+                ),
+              ),
+            ),
+            if (st.hasError)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
+                child: Text(st.errorText!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12)),
+              ),
+          ]),
+        ),
+      );
+
   Future<void> pickDate() async {
     final n = DateTime.now();
     final d = await showDatePicker(
@@ -96,7 +130,7 @@ class _ProductFormState extends State<ProductForm> {
               child: Column(children: [
                 field(name, 'name'),
                 const SizedBox(height: 16),
-                field(cat, 'category'),
+                categoryField(),
               ]),
             ),
             const SizedBox(height: 14),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../state/app_state.dart';
 import '../l10n/strings.dart';
 import '../models/product.dart';
+import '../models/categories.dart';
 import '../utils.dart';
 import '../widgets/status_chip.dart';
 import '../widgets/ui.dart';
@@ -162,7 +163,7 @@ class _ProductCard extends StatelessWidget {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-              Text('${p.category}${p.expiry != null ? ' · ${fmtDate(p.expiry!)}' : ''}',
+              Text('${categoryLabel(p.category)}${p.expiry != null ? ' · ${fmtDate(p.expiry!)}' : ''}',
                   style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
             ]),
           ),

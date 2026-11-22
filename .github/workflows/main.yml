@@ -51,6 +51,15 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # file_picker مبني على compileSdk 34 بينما تتطلب مكتبات Flutter الحديثة 36
+      - name: Raise compileSdk of file_picker
+        run: |
+          CACHE="${PUB_CACHE:-$HOME/.pub-cache}"
+          for f in $(find "$CACHE/hosted" -path '*file_picker-*/android/build.gradle*'); do
+            sed -i -E 's/compileSdk(Version)?[ =(]+[0-9]+\)?/compileSdk 36/' "$f"
+            echo "patched: $f"; grep -n "compileSdk" "$f"
+          done
+
       - name: Generate app icons
         run: dart run flutter_launcher_icons
 

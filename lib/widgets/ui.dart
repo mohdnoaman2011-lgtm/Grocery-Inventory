@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../theme.dart';
 import '../utils.dart';
 
 /// بطاقة عامة بزوايا مستديرة وظل ناعم، وتدعم التدرج اللوني والنقر.
@@ -55,4 +56,25 @@ class CountUp extends StatelessWidget {
         curve: Curves.easeOutCubic,
         builder: (_, v, __) => Text(fmt(v), style: style),
       );
+}
+
+/// الشعار بخلفية متناسقة: في الوضع الفاتح يندمج مع الخلفية، وفي الداكن يوضع على بطاقة بيضاء.
+class BrandLogo extends StatelessWidget {
+  final double height;
+  const BrandLogo({super.key, this.height = 110});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    Widget fallback(_, __, ___) => Icon(Icons.shopping_basket, size: height * .7, color: kGreen);
+    if (t.brightness == Brightness.dark) {
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: const Color(0xFFFEFEFF), borderRadius: BorderRadius.circular(28)),
+        child: Image.asset('assets/logo.png', height: height, errorBuilder: fallback),
+      );
+    }
+    return Image.asset('assets/logo.png',
+        height: height, color: t.scaffoldBackgroundColor, colorBlendMode: BlendMode.multiply, errorBuilder: fallback);
+  }
 }

@@ -58,6 +58,7 @@ const _s = <String, List<String>>{
   'appLock': ['قفل التطبيق برمز سري', 'App PIN lock'],
   'biometric': ['الدخول بالبصمة', 'Fingerprint login'],
   'done': ['تم', 'Done'],
+  'chooseCategory': ['اختر الفئة', 'Choose a category'],
   'addFirst': ['أضف أول منتج', 'Add your first product'],
   'emptyHome': ['ابدأ بإضافة منتجاتك لتظهر الإحصائيات هنا', 'Add products to see your stats here'],
   'allGood': ['كل شيء بخير، لا توجد تنبيهات', 'All good, no alerts'],

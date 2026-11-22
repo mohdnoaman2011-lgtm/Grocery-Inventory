@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../l10n/strings.dart';
 import '../state/app_state.dart';
 import '../widgets/pin_pad.dart';
+import '../widgets/ui.dart';
 
 class LockScreen extends StatefulWidget {
   const LockScreen({super.key});
@@ -19,7 +20,7 @@ class _LockScreenState extends State<LockScreen> {
   }
 
   Future<void> _bio() async {
-    if (await state.bioAuth(tr('bioReason'))) state.unlock();
+    if (await state.bioAuth(tr('bioReason')) == null) state.unlock();
   }
 
   @override
@@ -29,8 +30,7 @@ class _LockScreenState extends State<LockScreen> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Image.asset('assets/logo.png', height: 110,
-                    errorBuilder: (_, __, ___) => const Icon(Icons.lock_outline, size: 72)),
+                const BrandLogo(height: 110),
                 const SizedBox(height: 28),
                 PinPad(
                   title: tr('enterPin'),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../state/app_state.dart';
 import '../l10n/strings.dart';
 import '../models/product.dart';
+import '../theme.dart';
 import '../utils.dart';
 import '../widgets/ui.dart';
 
@@ -26,18 +27,31 @@ class _ProductFormState extends State<ProductForm> {
   late final price = TextEditingController(text: p == null ? null : fmtNum(p!.price));
   late DateTime? expiry = p?.expiry;
 
-  InputDecoration deco(String k, {Widget? suffix}) => InputDecoration(
-        labelText: tr(k),
+  InputDecoration deco({Widget? suffix}) => InputDecoration(
         filled: true,
+        isDense: true,
         suffixIcon: suffix,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
       );
 
-  Widget field(TextEditingController c, String k, {bool number = false}) => TextFormField(
-        controller: c,
-        keyboardType: number ? const TextInputType.numberWithOptions(decimal: true) : null,
-        decoration: deco(k),
-        validator: (v) => (v == null || v.trim().isEmpty || (number && num.tryParse(v) == null)) ? tr('required') : null,
+  /// عنوان فوق الحقل (بدل العنوان العائم الذي كان يتداخل مع حدود الحقل).
+  Widget labeled(String k, Widget child) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: 4, bottom: 6),
+          child: Text(tr(k), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+        ),
+        child,
+      ]);
+
+  Widget field(TextEditingController c, String k, {bool number = false}) => labeled(
+        k,
+        TextFormField(
+          controller: c,
+          keyboardType: number ? const TextInputType.numberWithOptions(decimal: true) : null,
+          decoration: deco(),
+          validator: (v) => (v == null || v.trim().isEmpty || (number && num.tryParse(v) == null)) ? tr('required') : null,
+        ),
       );
 
   Future<void> pickDate() async {
@@ -73,6 +87,7 @@ class _ProductFormState extends State<ProductForm> {
           backgroundColor: Colors.transparent,
           scrolledUnderElevation: 0,
           centerTitle: false,
+          systemOverlayStyle: overlayFor(Theme.of(context).brightness),
         ),
         body: Form(
           key: _key,
@@ -80,7 +95,7 @@ class _ProductFormState extends State<ProductForm> {
             Surface(
               child: Column(children: [
                 field(name, 'name'),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
                 field(cat, 'category'),
               ]),
             ),
@@ -102,12 +117,15 @@ class _ProductFormState extends State<ProductForm> {
             ),
             const SizedBox(height: 14),
             Surface(
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: pickDate,
-                child: InputDecorator(
-                  decoration: deco('expiry', suffix: const Icon(Icons.calendar_today_outlined)),
-                  child: Text(expiry == null ? '—' : fmtDate(expiry!)),
+              child: labeled(
+                'expiry',
+                InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: pickDate,
+                  child: InputDecorator(
+                    decoration: deco(suffix: const Icon(Icons.calendar_today_outlined)),
+                    child: Text(expiry == null ? '—' : fmtDate(expiry!), style: const TextStyle(fontSize: 15)),
+                  ),
                 ),
               ),
             ),

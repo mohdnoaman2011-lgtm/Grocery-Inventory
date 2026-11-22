@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../state/app_state.dart';
 import '../l10n/strings.dart';
@@ -70,10 +73,61 @@ class SettingsPage extends StatelessWidget {
             return;
           }
           if (!state.appLock) return snack(tr('needLockFirst'));
-          if (!await state.bioAvailable()) return snack(tr('bioUnavailable'));
-          if (await state.bioAuth(tr('bioReason'))) {
+          final pre = await state.bioCheck();
+          if (pre != null) return snack('${tr('bioUnavailable')} ($pre)');
+          final err = await state.bioAuth(tr('bioReason'));
+          if (err == null) {
             state.biometric = true;
             state.commit();
+          } else if (err != 'cancelled') {
+            snack('${tr('bioFail')} ($err)');
+          }
+        }
+
+        Future<bool> confirm(String title, String msg) async {
+          final yes = await showDialog<bool>(
+            context: c,
+            builder: (d) => AlertDialog(
+              title: Text(title),
+              content: Text(msg),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(d, false), child: Text(tr('cancel'))),
+                FilledButton(onPressed: () => Navigator.pop(d, true), child: Text(tr('continueBtn'))),
+              ],
+            ),
+          );
+          return yes == true;
+        }
+
+        Future<void> exportFile() async {
+          try {
+            final bytes = Uint8List.fromList(utf8.encode(state.exportJson()));
+            final name = 'inventory_backup_${fmtDate(DateTime.now()).replaceAll('/', '-')}.json';
+            final path = await FilePicker.platform.saveFile(
+              dialogTitle: tr('saveToPhone'),
+              fileName: name,
+              bytes: bytes,
+              type: FileType.any,
+            );
+            if (path != null) {
+              state.backupNow();
+              snack(tr('saved'));
+            }
+          } catch (e) {
+            snack('$e');
+          }
+        }
+
+        Future<void> importFile() async {
+          try {
+            final r = await FilePicker.platform.pickFiles(type: FileType.any, withData: true);
+            if (r == null || r.files.isEmpty) return;
+            final bytes = r.files.first.bytes;
+            if (bytes == null) return snack(tr('badFile'));
+            if (state.products.isNotEmpty && !await confirm(tr('restoreFromFile'), tr('importConfirm'))) return;
+            snack(tr(state.importJson(utf8.decode(bytes)) ? 'restored' : 'badFile'));
+          } catch (e) {
+            snack(tr('badFile'));
           }
         }
 
@@ -147,23 +201,18 @@ class SettingsPage extends StatelessWidget {
               ]),
               section('backup', [
                 tile(
-                  Icons.cloud_upload_outlined,
+                  Icons.save_alt,
                   tr('lastBackup'),
                   sub: state.lastBackup == null ? tr('never') : fmtDate(state.lastBackup!),
-                  trailing: FilledButton.tonal(
-                    onPressed: () {
-                      state.backupNow();
-                      snack(tr('backedUp'));
-                    },
-                    child: Text(tr('backupNow')),
-                  ),
+                  trailing: FilledButton.tonal(onPressed: exportFile, child: Text(tr('backupNow'))),
                 ),
+                tile(Icons.folder_open, tr('restoreFromFile'), trailing: const Icon(Icons.chevron_right), onTap: importFile),
                 switchTile(Icons.autorenew, tr('autoBackup'), state.autoBackup, (v) {
                   state.autoBackup = v;
                   state.commit();
                   if (v) state.maybeAutoBackup();
                 }, sub: tr('autoBackupHint')),
-                tile(Icons.settings_backup_restore, tr('restore'), trailing: const Icon(Icons.chevron_right), onTap: () {
+                tile(Icons.settings_backup_restore, tr('restoreInternal'), trailing: const Icon(Icons.chevron_right), onTap: () {
                   snack(tr(state.restore() ? 'restored' : 'noBackup'));
                 }),
               ]),

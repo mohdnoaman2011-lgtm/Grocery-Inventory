@@ -21,17 +21,22 @@ class HomePage extends StatelessWidget {
 
         Widget mini(IconData icon, String k, num v, Color tint) => Expanded(
               child: Surface(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                radius: 20,
+                padding: const EdgeInsets.all(12),
+                child: Row(children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(color: tint.withAlpha(38), shape: BoxShape.circle),
-                    child: Icon(icon, color: tint, size: 22),
+                    child: Icon(icon, color: tint, size: 20),
                   ),
-                  const SizedBox(height: 14),
-                  CountUp(v, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 2),
-                  Text(tr(k), style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      CountUp(v, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, height: 1.2)),
+                      Text(tr(k), maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11.5, height: 1.25, color: cs.onSurfaceVariant)),
+                    ]),
+                  ),
                 ]),
               ),
             );
@@ -42,11 +47,11 @@ class HomePage extends StatelessWidget {
 
         return Scaffold(
           body: SafeArea(
-            child: ListView(padding: const EdgeInsets.fromLTRB(20, 16, 20, 24), children: [
+            child: ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 20), children: [
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(tr('welcome'), style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
-                  Text(tr('app'), style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w800)),
+                  Text(tr('app'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
                 ]),
                 FilledButton.icon(
                   onPressed: () => openForm(c),
@@ -73,15 +78,15 @@ class HomePage extends StatelessWidget {
                 )
               else ...[
                 Surface(
-                  radius: 28,
-                  padding: const EdgeInsets.all(22),
+                  radius: 24,
+                  padding: const EdgeInsets.all(18),
                   gradient: const LinearGradient(begin: Alignment.topRight, end: Alignment.bottomLeft, colors: [kGreen, kGreenDark]),
                   child: SizedBox(
                     width: double.infinity,
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(tr('stockValue'), style: TextStyle(color: Colors.white.withAlpha(215), fontSize: 14)),
                       const SizedBox(height: 6),
-                      CountUp(state.value, style: const TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w800)),
+                      CountUp(state.value, style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w800)),
                       const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
@@ -96,18 +101,22 @@ class HomePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
-                Row(children: [
+                IntrinsicHeight(
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   mini(Icons.category_outlined, 'totalItems', state.products.length, cs.primary),
                   const SizedBox(width: 12),
                   mini(Icons.layers_outlined, 'totalUnits', state.units, cs.tertiary),
-                ]),
+                  ]),
+                ),
                 const SizedBox(height: 12),
-                Row(children: [
+                IntrinsicHeight(
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   mini(Icons.trending_down, 'lowStock', state.count((s) => s == Status.low), Status.low.fg(br)),
                   const SizedBox(width: 12),
                   mini(Icons.event_busy, 'expiryAlerts', state.count((s) => s == Status.expiring || s == Status.expired), Status.expired.fg(br)),
-                ]),
-                const SizedBox(height: 24),
+                  ]),
+                ),
+                const SizedBox(height: 20),
                 Text(tr('attention'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                 const SizedBox(height: 10),
                 if (critical.isEmpty)

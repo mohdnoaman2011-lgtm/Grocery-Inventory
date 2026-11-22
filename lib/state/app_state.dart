@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/product.dart';
@@ -101,6 +102,26 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
+  // ───── تصدير / استيراد ملف ─────
+  String exportJson() => jsonEncode({
+        'app': 'grocery_inventory',
+        'v': 1,
+        'date': DateTime.now().toIso8601String(),
+        'products': products.map((e) => e.toJson()).toList(),
+      });
+
+  bool importJson(String raw) {
+    try {
+      final m = jsonDecode(raw);
+      final list = (m is Map ? m['products'] : m) as List;
+      products = list.map((e) => Product.fromJson(e)).toList();
+      commit();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   // ───── القفل بالرمز السري ─────
   String _hash(String pin, String salt) => sha256.convert(utf8.encode('$salt:$pin')).toString();
 
@@ -142,23 +163,32 @@ class AppState extends ChangeNotifier {
   }
 
   // ───── البصمة ─────
-  Future<bool> bioAvailable() async {
+  /// يرجع null إذا كانت البصمة جاهزة، أو سبب العطل.
+  Future<String?> bioCheck() async {
     try {
-      return await _auth.isDeviceSupported() && (await _auth.getAvailableBiometrics()).isNotEmpty;
-    } catch (_) {
-      return false;
+      if (!await _auth.isDeviceSupported()) return 'not_supported';
+      if ((await _auth.getAvailableBiometrics()).isEmpty) return 'not_enrolled';
+      return null;
+    } on PlatformException catch (e) {
+      return '${e.code}: ${e.message ?? ''}';
+    } catch (e) {
+      return '$e';
     }
   }
 
-  Future<bool> bioAuth(String reason) async {
+  /// يرجع null عند النجاح، 'cancelled' عند الإلغاء، أو نص الخطأ.
+  Future<String?> bioAuth(String reason) async {
     authenticating = true;
     try {
-      return await _auth.authenticate(
+      final ok = await _auth.authenticate(
         localizedReason: reason,
-        options: const AuthenticationOptions(biometricOnly: true),
+        options: const AuthenticationOptions(biometricOnly: false, stickyAuth: true),
       );
-    } catch (_) {
-      return false;
+      return ok ? null : 'cancelled';
+    } on PlatformException catch (e) {
+      return '${e.code}: ${e.message ?? ''}';
+    } catch (e) {
+      return '$e';
     } finally {
       Future.delayed(const Duration(milliseconds: 600), () => authenticating = false);
     }

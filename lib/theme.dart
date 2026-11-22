@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 
 const kGreen = Color(0xFF1F6F54);
@@ -28,3 +29,11 @@ ThemeData buildTheme(Brightness b) {
     }),
   );
 }
+
+/// أيقونات شريط الحالة: داكنة على الخلفية الفاتحة وفاتحة على الداكنة.
+SystemUiOverlayStyle overlayFor(Brightness b) =>
+    (b == Brightness.dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark).copyWith(
+      statusBarColor: Colors.transparent,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarContrastEnforced: false,
+    );

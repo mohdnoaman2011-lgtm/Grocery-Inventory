@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'state/app_state.dart';
 import 'theme.dart';
@@ -47,10 +48,20 @@ class _InventoryAppState extends State<InventoryApp> with WidgetsBindingObserver
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          builder: (context, child) => Stack(children: [
-            child ?? const SizedBox.shrink(),
-            if (state.locked) const Positioned.fill(child: LockScreen()),
-          ]),
+          builder: (context, child) {
+            final mq = MediaQuery.of(context);
+            return MediaQuery(
+              // تحديد تكبير الخط حتى لا تتضخم الواجهة على الأجهزة ذات الخط الكبير
+              data: mq.copyWith(textScaler: mq.textScaler.clamp(minScaleFactor: 0.85, maxScaleFactor: 1.1)),
+              child: AnnotatedRegion<SystemUiOverlayStyle>(
+                value: overlayFor(Theme.of(context).brightness),
+                child: Stack(children: [
+                  child ?? const SizedBox.shrink(),
+                  if (state.locked) const Positioned.fill(child: LockScreen()),
+                ]),
+              ),
+            );
+          },
           home: const SplashScreen(),
         ),
       );

@@ -31,6 +31,23 @@ jobs:
             flutter create . --platforms=android --project-name inventory_app --org com.example
           fi
 
+      # صلاحية البصمة + دعم زر الرجوع التنبؤي (Android 14+) + نشاط يدعم نافذة البصمة
+      - name: Configure Android
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          if ! grep -q USE_BIOMETRIC "$MANIFEST"; then
+            sed -i '0,/<application/s//<uses-permission android:name="android.permission.USE_BIOMETRIC"\/>\n    <application android:enableOnBackInvokedCallback="true"/' "$MANIFEST"
+          fi
+          find android/app/src/main -name 'MainActivity.*' -exec sed -i 's/FlutterActivity/FlutterFragmentActivity/g' {} +
+          # local_auth تحتاج سمة AppCompat للنشاط وإلا فشلت نافذة البصمة بصمت
+          find android/app/src/main/res -name styles.xml -exec sed -i \
+            -e 's#parent="@android:style/Theme\.Light[A-Za-z.]*"#parent="Theme.AppCompat.Light.NoActionBar"#' \
+            -e 's#parent="@android:style/Theme\.DeviceDefault\.Light[A-Za-z.]*"#parent="Theme.AppCompat.Light.NoActionBar"#' \
+            -e 's#parent="@android:style/Theme\.Black[A-Za-z.]*"#parent="Theme.AppCompat.NoActionBar"#' \
+            -e 's#parent="@android:style/Theme\.DeviceDefault[A-Za-z.]*"#parent="Theme.AppCompat.NoActionBar"#' {} +
+          grep -rn "parent=" android/app/src/main/res --include=styles.xml || true
+          grep -n "USE_BIOMETRIC\|enableOnBackInvokedCallback" "$MANIFEST"
+
       - name: Install dependencies
         run: flutter pub get
 

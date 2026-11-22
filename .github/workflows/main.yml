@@ -55,9 +55,10 @@ jobs:
       - name: Raise compileSdk of file_picker
         run: |
           CACHE="${PUB_CACHE:-$HOME/.pub-cache}"
-          for f in $(find "$CACHE/hosted" -path '*file_picker-*/android/build.gradle*'); do
+          for f in $(find "$CACHE/hosted" -path '*/file_picker-*/android/build.gradle*' -not -path '*/example/*'); do
             sed -i -E 's/compileSdk(Version)?[ =(]+[0-9]+\)?/compileSdk 36/' "$f"
-            echo "patched: $f"; grep -n "compileSdk" "$f"
+            echo "patched: $f"
+            grep -n "compileSdk" "$f" || true
           done
 
       - name: Generate app icons

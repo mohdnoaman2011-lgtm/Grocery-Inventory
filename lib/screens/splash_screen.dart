@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../l10n/strings.dart';
+import '../state/app_state.dart';
 import '../theme.dart';
 import '../widgets/ui.dart';
 import 'shell.dart';
@@ -17,6 +18,7 @@ class _SplashScreenState extends State<SplashScreen> {
     Future.delayed(const Duration(milliseconds: 2000), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (_) => const Shell()));
+        state.finishSplash(); // تظهر شاشة القفل الآن فوق الشاشة الرئيسية
       }
     });
   }

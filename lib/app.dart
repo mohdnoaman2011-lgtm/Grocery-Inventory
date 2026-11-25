@@ -57,7 +57,7 @@ class _InventoryAppState extends State<InventoryApp> with WidgetsBindingObserver
                 value: overlayFor(Theme.of(context).brightness),
                 child: Stack(children: [
                   child ?? const SizedBox.shrink(),
-                  if (state.locked) const Positioned.fill(child: LockScreen()),
+                  if (state.locked && state.splashDone) const Positioned.fill(child: LockScreen()),
                 ]),
               ),
             );

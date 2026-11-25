@@ -14,6 +14,8 @@ class AppState extends ChangeNotifier {
   ThemeMode theme = ThemeMode.system;
   bool isAr = true, autoBackup = true, appLock = false, biometric = false;
   bool locked = false, authenticating = false;
+  /// تصبح true بعد انتهاء شاشة البداية؛ قبلها لا تظهر شاشة القفل.
+  bool splashDone = false;
   DateTime? lastBackup;
   String? pinHash, pinSalt;
   late SharedPreferences _p;
@@ -155,6 +157,11 @@ class AppState extends ChangeNotifier {
       locked = true;
       notifyListeners();
     }
+  }
+
+  void finishSplash() {
+    splashDone = true;
+    notifyListeners();
   }
 
   void unlock() {

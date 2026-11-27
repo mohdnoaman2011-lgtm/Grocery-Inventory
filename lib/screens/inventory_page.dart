@@ -1,11 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../state/app_state.dart';
 import '../l10n/strings.dart';
+import '../theme.dart';
 import '../models/product.dart';
 import '../models/categories.dart';
 import '../utils.dart';
 import '../widgets/status_chip.dart';
 import '../widgets/ui.dart';
+import 'barcode_scanner_page.dart';
 import 'product_form.dart';
 
 Future<bool> confirmDelete(BuildContext c, Product p) async {
@@ -37,13 +40,90 @@ class InventoryPage extends StatefulWidget {
 class _InventoryPageState extends State<InventoryPage> {
   String q = '';
   Status? filter;
+  final collapsed = <String>{};
+  final qc = TextEditingController();
+
+  @override
+  void dispose() {
+    qc.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) => watch((c) {
         final cs = Theme.of(c).colorScheme;
         final list = state.products
-            .where((p) => p.name.contains(q) && (filter == null || p.status == filter))
-            .toList();
+            .where((p) => (p.name.contains(q) || (p.barcode ?? '').contains(q)) && (filter == null || p.status == filter))
+            .toList()
+          ..sort((a, b) => a.name.compareTo(b.name));
+
+        // تجميع المنتجات حسب الفئة بترتيب قائمة الفئات، ثم أي فئات أخرى
+        final groups = <String, List<Product>>{};
+        for (final p in list) {
+          groups.putIfAbsent(p.category, () => []).add(p);
+        }
+        final order = [
+          ...kCategories.where(groups.containsKey),
+          ...groups.keys.where((k) => !kCategories.contains(k)),
+        ];
+
+        Widget swipeBg() => Container(
+              decoration: BoxDecoration(color: cs.errorContainer, borderRadius: BorderRadius.circular(24)),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              alignment: Alignment.center,
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: Icon(Icons.delete_outline, color: cs.onErrorContainer),
+              ),
+            );
+        Widget tileFor(Product p) => Padding(
+              padding: const EdgeInsetsDirectional.only(start: 8, bottom: 10),
+              child: Dismissible(
+                key: ValueKey(p.id),
+                background: swipeBg(),
+                secondaryBackground: swipeBg(),
+                confirmDismiss: (_) => confirmDelete(c, p),
+                onDismissed: (_) => state.remove(p),
+                child: _ProductCard(p),
+              ),
+            );
+
+        List<Widget> section(String k) {
+          final items = groups[k]!;
+          final open = !collapsed.contains(k);
+          return [
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 10),
+              child: Surface(
+                radius: 18,
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                onTap: () => setState(() => open ? collapsed.add(k) : collapsed.remove(k)),
+                child: Row(children: [
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(color: kGreen.withAlpha(30), borderRadius: BorderRadius.circular(12)),
+                    child: Icon(k.isEmpty ? Icons.category_outlined : categoryIcon(k), color: kGreen, size: 21),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(k.isEmpty ? tr('uncategorized') : categoryLabel(k),
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(99)),
+                    child: Text('${items.length}',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: cs.onPrimaryContainer)),
+                  ),
+                  const SizedBox(width: 6),
+                  Icon(open ? Icons.expand_less : Icons.expand_more, color: cs.onSurfaceVariant),
+                ]),
+              ),
+            ),
+            if (open) ...items.map(tileFor),
+          ];
+        }
 
         Widget chip(String k, Status? s) => Padding(
               padding: const EdgeInsetsDirectional.only(end: 8),
@@ -75,6 +155,21 @@ class _InventoryPageState extends State<InventoryPage> {
                 child: SearchBar(
                   hintText: tr('search'),
                   leading: const Icon(Icons.search),
+                  controller: qc,
+                  trailing: [
+                    IconButton(
+                      icon: const Icon(Icons.qr_code_scanner),
+                      onPressed: () async {
+                        final code = await Navigator.of(c).push<String>(
+                          MaterialPageRoute(fullscreenDialog: true, builder: (_) => const BarcodeScannerPage()),
+                        );
+                        if (code != null) {
+                          qc.text = code;
+                          setState(() => q = code);
+                        }
+                      },
+                    ),
+                  ],
                   elevation: const WidgetStatePropertyAll(0.0),
                   backgroundColor: WidgetStatePropertyAll(cs.surfaceContainerHigh),
                   onChanged: (v) => setState(() => q = v),
@@ -105,32 +200,9 @@ class _InventoryPageState extends State<InventoryPage> {
                           ],
                         ]),
                       )
-                    : ListView.builder(
+                    : ListView(
                         padding: const EdgeInsets.fromLTRB(20, 14, 20, 96),
-                        itemCount: list.length,
-                        itemBuilder: (_, i) {
-                          final p = list[i];
-                          Widget swipeBg() => Container(
-                                decoration: BoxDecoration(color: cs.errorContainer, borderRadius: BorderRadius.circular(24)),
-                                padding: const EdgeInsets.symmetric(horizontal: 24),
-                                alignment: Alignment.center,
-                                child: Align(
-                                  alignment: AlignmentDirectional.centerEnd,
-                                  child: Icon(Icons.delete_outline, color: cs.onErrorContainer),
-                                ),
-                              );
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Dismissible(
-                              key: ValueKey(p.id),
-                              background: swipeBg(),
-                              secondaryBackground: swipeBg(),
-                              confirmDismiss: (_) => confirmDelete(c, p),
-                              onDismissed: (_) => state.remove(p),
-                              child: _ProductCard(p),
-                            ),
-                          );
-                        },
+                        children: [for (final k in order) ...section(k)],
                       ),
               ),
             ]),
@@ -153,17 +225,22 @@ class _ProductCard extends StatelessWidget {
       onTap: () => openForm(context, p),
       child: Column(children: [
         Row(children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(color: s.bg(br), borderRadius: BorderRadius.circular(14)),
-            child: Icon(s.icon, color: s.fg(br)),
-          ),
+          p.imagePath != null && File(p.imagePath!).existsSync()
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.file(File(p.imagePath!), width: 44, height: 44, fit: BoxFit.cover, cacheWidth: 132),
+                )
+              : Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(color: s.bg(br), borderRadius: BorderRadius.circular(14)),
+                  child: Icon(s.icon, color: s.fg(br)),
+                ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(p.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-              Text('${categoryLabel(p.category)}${p.expiry != null ? ' · ${fmtDate(p.expiry!)}' : ''}',
+              Text(p.expiry != null ? '${tr('expiry')}: ${fmtDate(p.expiry!)}' : '—',
                   style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
             ]),
           ),

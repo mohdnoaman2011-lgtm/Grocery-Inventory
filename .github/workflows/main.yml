@@ -38,6 +38,8 @@ jobs:
           if ! grep -q USE_BIOMETRIC "$MANIFEST"; then
             sed -i '0,/<application/s//<uses-permission android:name="android.permission.USE_BIOMETRIC"\/>\n    <application android:enableOnBackInvokedCallback="true"/' "$MANIFEST"
           fi
+          # صلاحية الكاميرا لمسح الباركود
+          grep -q 'permission.CAMERA' "$MANIFEST" || sed -i '0,/<application/s//<uses-permission android:name="android.permission.CAMERA"\/>\n    <application/' "$MANIFEST"
           find android/app/src/main -name 'MainActivity.*' -exec sed -i 's/FlutterActivity/FlutterFragmentActivity/g' {} +
           # local_auth تحتاج سمة AppCompat للنشاط وإلا فشلت نافذة البصمة بصمت
           find android/app/src/main/res -name styles.xml -exec sed -i \
@@ -51,15 +53,37 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # file_picker مبني على compileSdk 34 بينما تتطلب مكتبات Flutter الحديثة 36
-      - name: Raise compileSdk of file_picker
+      # بعض الإضافات مبنية على compileSdk أقدم من 36 بينما تتطلب مكتبات Flutter الحديثة 36
+      - name: Raise compileSdk of plugins below 36
         run: |
           CACHE="${PUB_CACHE:-$HOME/.pub-cache}"
-          for f in $(find "$CACHE/hosted" -path '*/file_picker-*/android/build.gradle*' -not -path '*/example/*'); do
-            sed -i -E 's/compileSdk(Version)?[ =(]+[0-9]+\)?/compileSdk 36/' "$f"
-            echo "patched: $f"
-            grep -n "compileSdk" "$f" || true
+          find "$CACHE/hosted" -path '*/android/build.gradle' -not -path '*/example/*' | while read -r f; do
+            sed -i -E 's/compileSdk(Version)?[ =(]+(2[0-9]|3[0-5])\)?/compileSdk 36/' "$f"
           done
+          find "$CACHE/hosted" -path '*/android/build.gradle.kts' -not -path '*/example/*' | while read -r f; do
+            sed -i -E 's/compileSdk(Version)? *=? *\(?(2[0-9]|3[0-5])\)?/compileSdk = 36/' "$f"
+          done
+          grep -rn "compileSdk" "$CACHE"/hosted/pub.dev/*/android/build.gradle* 2>/dev/null | grep -v example | head -40 || true
+
+      # تعطّل فاحص lint داخل image_picker_android بخطأ داخلي في الأداة نفسها (ليس في الكود)
+      - name: Disable lintVital tasks
+        run: |
+          if [ -f android/build.gradle.kts ]; then
+            cat >> android/build.gradle.kts <<'KTS'
+
+          subprojects {
+              tasks.matching { it.name.startsWith("lintVital") }.configureEach { enabled = false }
+          }
+          KTS
+          elif [ -f android/build.gradle ]; then
+            cat >> android/build.gradle <<'GRADLE'
+
+          subprojects {
+              tasks.matching { it.name.startsWith('lintVital') }.configureEach { enabled = false }
+          }
+          GRADLE
+          fi
+          tail -6 android/build.gradle* 2>/dev/null || true
 
       - name: Generate app icons
         run: dart run flutter_launcher_icons

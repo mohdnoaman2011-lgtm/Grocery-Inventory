@@ -39,6 +39,7 @@ class Product {
   int qty, minQty;
   double cost, price;
   DateTime? expiry;
+  String? imagePath, barcode;
 
   Product({
     required this.id,
@@ -49,6 +50,8 @@ class Product {
     required this.cost,
     required this.price,
     this.expiry,
+    this.imagePath,
+    this.barcode,
   });
 
   Status get status {
@@ -65,6 +68,7 @@ class Product {
         'id': id, 'name': name, 'category': category, 'qty': qty,
         'minQty': minQty, 'cost': cost, 'price': price,
         'expiry': expiry?.toIso8601String(),
+        'imagePath': imagePath, 'barcode': barcode,
       };
 
   factory Product.fromJson(Map<String, dynamic> j) => Product(
@@ -72,5 +76,6 @@ class Product {
         qty: j['qty'], minQty: j['minQty'],
         cost: (j['cost'] as num).toDouble(), price: (j['price'] as num).toDouble(),
         expiry: j['expiry'] == null ? null : DateTime.parse(j['expiry']),
+        imagePath: j['imagePath'], barcode: j['barcode'],
       );
 }

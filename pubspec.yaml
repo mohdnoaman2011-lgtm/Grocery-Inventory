@@ -16,7 +16,7 @@ dependencies:
   crypto: ^3.0.3
   file_picker: ^8.1.2
   image_picker: ^1.1.2
-  mobile_scanner: ^6.0.2
+  mobile_scanner: ^7.0.0
   path_provider: ^2.1.4
 
 dev_dependencies:

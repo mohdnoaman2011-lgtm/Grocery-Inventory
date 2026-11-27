@@ -160,9 +160,7 @@ class _InventoryPageState extends State<InventoryPage> {
                     IconButton(
                       icon: const Icon(Icons.qr_code_scanner),
                       onPressed: () async {
-                        final code = await Navigator.of(c).push<String>(
-                          MaterialPageRoute(fullscreenDialog: true, builder: (_) => const BarcodeScannerPage()),
-                        );
+                        final code = await scanBarcode(c);
                         if (code != null) {
                           qc.text = code;
                           setState(() => q = code);

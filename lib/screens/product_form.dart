@@ -106,9 +106,7 @@ class _ProductFormState extends State<ProductForm> {
   }
 
   Future<void> scan() async {
-    final code = await Navigator.of(context).push<String>(
-      MaterialPageRoute(fullscreenDialog: true, builder: (_) => const BarcodeScannerPage()),
-    );
+    final code = await scanBarcode(context);
     if (code == null || !mounted) return;
     setState(() => barcode.text = code);
     final dup = state.products.where((e) => e.barcode == code && e.id != p?.id).toList();

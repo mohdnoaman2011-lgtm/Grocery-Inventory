@@ -7,8 +7,6 @@ import '../l10n/strings.dart';
 Future<String?> scanBarcode(BuildContext context) => showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      showDragHandle: true,
-      dragHandleColor: Colors.white38,
       backgroundColor: Colors.black,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
       builder: (_) => const _ScannerSheet(),
@@ -67,8 +65,15 @@ class _ScannerSheetState extends State<_ScannerSheet> {
       child: SizedBox(
         height: h * 0.74,
         child: Column(children: [
+          // مقبض السحب
+          Container(
+            width: 36,
+            height: 4,
+            margin: const EdgeInsets.only(top: 12),
+            decoration: BoxDecoration(color: Colors.white38, borderRadius: BorderRadius.circular(99)),
+          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 4, 24, 16),
+            padding: const EdgeInsets.fromLTRB(24, 18, 24, 16),
             child: Text(tr('scanHint'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 18)),
           ),
           Expanded(

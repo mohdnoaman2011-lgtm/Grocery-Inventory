@@ -6,11 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/product.dart';
+import '../models/stock_count.dart';
 
 final state = AppState();
 
 class AppState extends ChangeNotifier {
   List<Product> products = [];
+  List<StockCount> counts = [];
   ThemeMode theme = ThemeMode.system;
   bool isAr = true, autoBackup = true, appLock = false, biometric = false;
   bool locked = false, authenticating = false;
@@ -37,6 +39,10 @@ class AppState extends ChangeNotifier {
     biometric = _p.getBool('biometric') ?? false;
     pinHash = _p.getString('pinHash');
     pinSalt = _p.getString('pinSalt');
+    final cr = _p.getString('counts');
+    counts = cr == null
+        ? []
+        : (jsonDecode(cr) as List).map((e) => StockCount.fromJson(Map<String, dynamic>.from(e as Map))).toList();
     final lb = _p.getString('lastBackup');
     lastBackup = lb == null ? null : DateTime.parse(lb);
     locked = appLock && pinHash != null;
@@ -57,6 +63,7 @@ class AppState extends ChangeNotifier {
     _p.setBool('autoBackup', autoBackup);
     _p.setBool('appLock', appLock);
     _p.setBool('biometric', biometric);
+    _p.setString('counts', jsonEncode(counts.map((e) => e.toJson()).toList()));
     notifyListeners();
   }
 
@@ -69,6 +76,24 @@ class AppState extends ChangeNotifier {
 
   void remove(Product p) {
     products.removeWhere((e) => e.id == p.id);
+    commit();
+  }
+
+  // ───── عمليات الجرد ─────
+  /// يحفظ عملية الجرد، ويحدّث كميات المنتجات إن كانت applied.
+  void addCount(StockCount c) {
+    counts.insert(0, c);
+    if (c.applied) {
+      for (final l in c.lines) {
+        final i = products.indexWhere((e) => e.id == l.productId);
+        if (i != -1) products[i].qty = l.counted;
+      }
+    }
+    commit();
+  }
+
+  void deleteCount(String id) {
+    counts.removeWhere((c) => c.id == id);
     commit();
   }
 
@@ -110,6 +135,7 @@ class AppState extends ChangeNotifier {
         'v': 1,
         'date': DateTime.now().toIso8601String(),
         'products': products.map((e) => e.toJson()).toList(),
+        'counts': counts.map((e) => e.toJson()).toList(),
       });
 
   bool importJson(String raw) {
@@ -117,6 +143,11 @@ class AppState extends ChangeNotifier {
       final m = jsonDecode(raw);
       final list = (m is Map ? m['products'] : m) as List;
       products = list.map((e) => Product.fromJson(e)).toList();
+      if (m is Map && m['counts'] is List) {
+        counts = (m['counts'] as List)
+            .map((e) => StockCount.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList();
+      }
       commit();
       return true;
     } catch (_) {

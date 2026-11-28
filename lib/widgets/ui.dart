@@ -78,3 +78,63 @@ class BrandLogo extends StatelessWidget {
         height: height, color: t.scaffoldBackgroundColor, colorBlendMode: BlendMode.multiply, errorBuilder: fallback);
   }
 }
+
+/// بطاقة إجراء كبيرة بتدرج لوني (أيقونة، عنوان، وصف، وسهم).
+class ActionCard extends StatelessWidget {
+  final IconData icon;
+  final String title, subtitle;
+  final List<Color> colors;
+  final VoidCallback onTap;
+  const ActionCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.colors,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final r = BorderRadius.circular(30);
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: r,
+        gradient: LinearGradient(begin: AlignmentDirectional.centerEnd, end: AlignmentDirectional.centerStart, colors: colors),
+        boxShadow: [BoxShadow(color: colors.last.withAlpha(70), blurRadius: 20, offset: const Offset(0, 8))],
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius: r,
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(color: Colors.white.withAlpha(56), borderRadius: BorderRadius.circular(20)),
+                child: Icon(icon, color: Colors.white, size: 32),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(title, style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: TextStyle(color: Colors.white.withAlpha(225), fontSize: 13.5)),
+                ]),
+              ),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(color: Colors.white.withAlpha(50), borderRadius: BorderRadius.circular(14)),
+                child: const Icon(Icons.chevron_right, color: Colors.white, size: 26),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
